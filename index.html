@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Trabalho GraphQL - Vitor Hugo</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #222;
+        }
+
+        header {
+            background-color: #222;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        main {
+            width: 90%;
+            max-width: 1000px;
+            margin: 30px auto;
+        }
+
+        section {
+            background-color: white;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+        }
+
+        h2 {
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        .item {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+        }
+
+        .item h3 {
+            margin-top: 0;
+        }
+
+        #status {
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #fff3cd;
+            border-radius: 6px;
+        }
+
+        .erro {
+            background-color: #f8d7da !important;
+            color: #842029;
+        }
+
+        .sucesso {
+            background-color: #d1e7dd !important;
+            color: #0f5132;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Consulta de Dados - GraphQL</h1>
+
+        <p>
+            Desenvolvimento de Sistemas - 3ª série B
+        </p>
+
+        <p>
+            Aluno: Vitor Hugo
+        </p>
+    </header>
+
+    <main>
+
+        <div id="status">
+            Carregando...
+        </div>
+
+        <section>
+            <h2>Alunos</h2>
+
+            <div id="lista-alunos">
+            </div>
+        </section>
+
+        <section>
+            <h2>Cursos</h2>
+
+            <div id="lista-cursos">
+            </div>
+        </section>
+
+        <section>
+            <h2>Professores</h2>
+
+            <div id="lista-professores">
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+
+        // =========================================
+        // ENDEREÇO DA API GRAPHQL
+        // =========================================
+
+        const GRAPHQL_ENDPOINT =
+            "https://testing-graphql.onrender.com/graphql";
+
+
+        // =========================================
+        // ELEMENTOS DA PÁGINA
+        // =========================================
+
+        const status =
+            document.getElementById("status");
+
+        const listaAlunos =
+            document.getElementById("lista-alunos");
+
+        const listaCursos =
+            document.getElementById("lista-cursos");
+
+        const listaProfessores =
+            document.getElementById("lista-professores");
+
+
+        // =========================================
+        // CONSULTA DOS ALUNOS
+        // =========================================
+
+        const BUSCAR_ALUNOS_QUERY = `
+            query {
+                students {
+                    id
+                    name
+                    email
+
+                    course {
+                        id
+                        name
+                        credits
+                    }
+                }
+            }
+        `;
+
+
+        // =========================================
+        // CONSULTA DOS CURSOS
+        // =========================================
+
+        const BUSCAR_CURSOS_QUERY = `
+            query {
+                courses {
+                    id
+                    name
+                    credits
+
+                    students {
+                        id
+                        name
+                    }
+                }
+            }
+        `;
+
+
+        // =========================================
+        // CONSULTA DOS PROFESSORES
+        // =========================================
+
+        const BUSCAR_PROFESSORES_QUERY = `
+            query {
+                teachers {
+                    id
+                    name
+
+                    courses {
+                        id
+                        name
+                    }
+                }
+            }
+        `;
+
+
+        // =========================================
+        // FUNÇÃO PARA FAZER A CONSULTA
+        // =========================================
+
+        async function fazerConsulta(query) {
+
+            const resposta = await fetch(
+                GRAPHQL_ENDPOINT,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        query: query
+                    })
+                }
+            );
+
+
+            const resultado =
+                await resposta.json();
+
+
+            if (resultado.errors) {
+
+                console.error(
+                    "Erro do GraphQL:",
+                    resultado.errors
+                );
+
+                throw new Error(
+                    "A API GraphQL retornou um erro."
+                );
+            }
+
+
+            if (!resposta.ok) {
+
+                throw new Error(
+                    "Erro na comunicação com o servidor."
+                );
+            }
+
+
+            return resultado.data;
+        }
+
+
+        // =========================================
+        // MOSTRAR ALUNOS
+        // =========================================
+
+        function exibirAlunos(alunos) {
+
+            listaAlunos.innerHTML = "";
+
+
+            if (!alunos || alunos.length === 0) {
+
+                listaAlunos.innerHTML =
+                    "<p>Nenhum aluno encontrado.</p>";
+
+                return;
+            }
+
+
+            alunos.forEach(aluno => {
+
+                const div =
+                    document.createElement("div");
+
+
+                div.classList.add("item");
+
+
+                const curso =
+                    aluno.course
+                        ? aluno.course.name
+                        : "Curso não informado";
+
+
+                div.innerHTML = `
+
+                    <h3>
+                        ${aluno.name}
+                    </h3>
+
+                    <p>
+                        <strong>E-mail:</strong>
+                        ${aluno.email}
+                    </p>
+
+                    <p>
+                        <strong>Curso:</strong>
+                        ${curso}
+                    </p>
+
+                `;
+
+
+                listaAlunos.appendChild(div);
+
+            });
+        }
+
+
+        // =========================================
+        // MOSTRAR CURSOS
+        // =========================================
+
+        function exibirCursos(cursos) {
+
+            listaCursos.innerHTML = "";
+
+
+            if (!cursos || cursos.length === 0) {
+
+                listaCursos.innerHTML =
+                    "<p>Nenhum curso encontrado.</p>";
+
+                return;
+            }
+
+
+            cursos.forEach(curso => {
+
+                const div =
+                    document.createElement("div");
+
+
+                div.classList.add("item");
+
+
+                let alunos = "";
+
+
+                if (
+                    curso.students &&
+                    curso.students.length > 0
+                ) {
+
+                    alunos = `
+
+                        <ul>
+
+                            ${curso.students.map(aluno => `
+
+                                <li>
+                                    ${aluno.name}
+                                </li>
+
+                            `).join("")}
+
+                        </ul>
+
+                    `;
+
+                } else {
+
+                    alunos =
+                        "<p>Nenhum aluno matriculado.</p>";
+                }
+
+
+                div.innerHTML = `
+
+                    <h3>
+                        ${curso.name}
+                    </h3>
+
+                    <p>
+                        <strong>Créditos:</strong>
+                        ${curso.credits}
+                    </p>
+
+                    <p>
+                        <strong>Alunos:</strong>
+                    </p>
+
+                    ${alunos}
+
+                `;
+
+
+                listaCursos.appendChild(div);
+
+            });
+        }
+
+
+        // =========================================
+        // MOSTRAR PROFESSORES
+        // =========================================
+
+        function exibirProfessores(professores) {
+
+            listaProfessores.innerHTML = "";
+
+
+            if (
+                !professores ||
+                professores.length === 0
+            ) {
+
+                listaProfessores.innerHTML =
+                    "<p>Nenhum professor encontrado.</p>";
+
+                return;
+            }
+
+
+            professores.forEach(professor => {
+
+                const div =
+                    document.createElement("div");
+
+
+                div.classList.add("item");
+
+
+                let cursos = "";
+
+
+                if (
+                    professor.courses &&
+                    professor.courses.length > 0
+                ) {
+
+                    cursos = `
+
+                        <ul>
+
+                            ${professor.courses.map(curso => `
+
+                                <li>
+                                    ${curso.name}
+                                </li>
+
+                            `).join("")}
+
+                        </ul>
+
+                    `;
+
+                } else {
+
+                    cursos =
+                        "<p>Nenhum curso informado.</p>";
+                }
+
+
+                div.innerHTML = `
+
+                    <h3>
+                        ${professor.name}
+                    </h3>
+
+                    <p>
+                        <strong>
+                            Cursos/Matérias:
+                        </strong>
+                    </p>
+
+                    ${cursos}
+
+                `;
+
+
+                listaProfessores.appendChild(div);
+
+            });
+        }
+
+
+        // =========================================
+        // FUNÇÃO PRINCIPAL
+        // =========================================
+
+        async function carregarDados() {
+
+            try {
+
+                status.textContent =
+                    "Carregando...";
+
+
+                status.className = "";
+
+
+                // Busca alunos
+
+                const dadosAlunos =
+                    await fazerConsulta(
+                        BUSCAR_ALUNOS_QUERY
+                    );
+
+
+                // Busca cursos
+
+                const dadosCursos =
+                    await fazerConsulta(
+                        BUSCAR_CURSOS_QUERY
+                    );
+
+
+                // Busca professores
+
+                const dadosProfessores =
+                    await fazerConsulta(
+                        BUSCAR_PROFESSORES_QUERY
+                    );
+
+
+                // Mostra os dados
+
+                exibirAlunos(
+                    dadosAlunos.students
+                );
+
+
+                exibirCursos(
+                    dadosCursos.courses
+                );
+
+
+                exibirProfessores(
+                    dadosProfessores.teachers
+                );
+
+
+                // Mensagem de sucesso
+
+                status.textContent =
+                    "Dados carregados com sucesso!";
+
+
+                status.className =
+                    "sucesso";
+
+            }
+
+            catch (erro) {
+
+                console.error(
+                    "Erro:",
+                    erro
+                );
+
+
+                status.textContent =
+                    "Erro ao carregar os dados. Verifique a conexão com a API.";
+
+
+                status.className =
+                    "erro";
+            }
+        }
+
+
+        // =========================================
+        // INICIAR
+        // =========================================
+
+        carregarDados();
+
+    </script>
+
+</body>
+
+</html>
